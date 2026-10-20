@@ -54,21 +54,23 @@ export function Letter({ patient, analysis, onClose }: { patient: Patient; analy
   }
 
   return (
-    <section className="card letter-card" aria-labelledby="letter-h">
-      <div className="card-head no-print">
-        <h2 id="letter-h">Your letter</h2>
-        <button type="button" className="icon-btn" aria-label="Close letter" onClick={onClose}>
-          ×
+    <section className="block letter-block" aria-labelledby="letter-h">
+      <div className="block-head no-print">
+        <h2 id="letter-h" className="label">
+          Your letter
+        </h2>
+        <button type="button" className="link-btn" onClick={onClose}>
+          Close
         </button>
       </div>
-      <div className="fields no-print">
-        <label>
-          Your name
-          <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Jordan Smith" />
+      <div className="field-grid no-print">
+        <label className="field">
+          <span>Your name</span>
+          <input id="letter-name" value={name} onChange={(e) => setName(e.target.value)} placeholder="Jordan Smith" />
         </label>
-        <label>
-          Addressed to
-          <input value={to} onChange={(e) => setTo(e.target.value)} placeholder="Dr. Lee / Transplant Center" />
+        <label className="field">
+          <span>Addressed to</span>
+          <input id="letter-to" value={to} onChange={(e) => setTo(e.target.value)} placeholder="Transplant Center" />
         </label>
       </div>
       <article className="letter print-only-target">
@@ -83,12 +85,12 @@ export function Letter({ patient, analysis, onClose }: { patient: Patient; analy
           </p>
         ))}
       </article>
-      <div className="row-actions no-print">
+      <div className="actions no-print">
         <button type="button" className="btn primary" onClick={() => window.print()}>
           Print or save PDF
         </button>
-        <button type="button" className="btn ghost" onClick={copy}>
-          {copied ? 'Copied ✓' : 'Copy for patient portal'}
+        <button type="button" className="btn" onClick={copy}>
+          {copied ? 'Copied' : 'Copy for patient portal'}
         </button>
       </div>
     </section>

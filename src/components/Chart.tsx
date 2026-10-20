@@ -7,9 +7,9 @@ const H = 320
 const M = { top: 16, right: 132, bottom: 32, left: 44 }
 
 const SERIES = [
-  { key: 'reported', label: 'Race-adjusted (what the chart said)', short: 'Race-adjusted', cls: 's-reported' },
-  { key: 'raceFree', label: 'CKD-EPI 2021, race-free', short: 'Race-free 2021', cls: 's-racefree' },
-  { key: 'legacyNoRace', label: 'Same equation, race term removed', short: 'Race term removed', cls: 's-norace' },
+  { key: 'reported', label: 'Race-adjusted (on your reports)', short: 'Reported', cls: 's-reported' },
+  { key: 'raceFree', label: 'CKD-EPI 2021, race-free', short: 'Race-free', cls: 's-racefree' },
+  { key: 'legacyNoRace', label: 'Same equation, race term removed', short: 'No race term', cls: 's-norace' },
 ] as const
 
 export function Chart({ analysis }: { analysis: Analysis }) {
