@@ -44,8 +44,8 @@ export function Learn() {
             <div>
               <dt className="mono">2023</dt>
               <dd>
-                Transplant programs must find Black candidates whose wait time was cut short and restore it. OPTN later
-                reported more than 14,000 candidates had their wait time changed.
+                Kidney transplant programs must review their registered Black candidates and request a wait-time change for
+                anyone whose time was cut short. By early 2024, more than 14,000 candidates had their wait time changed.
               </dd>
             </div>
           </dl>

@@ -1,17 +1,31 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { formatDuration, type Analysis, type Patient } from '../lib/analyze'
+import { isoToday } from '../lib/validate'
 import { fmtDate } from './format'
 
-export function Letter({ patient, analysis, onClose }: { patient: Patient; analysis: Analysis; onClose: () => void }) {
+interface Props {
+  patient: Patient
+  analysis: Analysis
+  onClose: () => void
+  /** Bumped each time "Write my letter" is clicked, so the letter scrolls into view even if it's already open. */
+  scrollSignal: number
+}
+
+export function Letter({ patient, analysis, onClose, scrollSignal }: Props) {
+  const headingRef = useRef<HTMLHeadingElement>(null)
+  useEffect(() => {
+    const smooth = !window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    headingRef.current?.scrollIntoView({ behavior: smooth ? 'smooth' : 'auto', block: 'start' })
+    headingRef.current?.focus({ preventScroll: true })
+  }, [scrollSignal])
+
   const [name, setName] = useState('')
   const [to, setTo] = useState('')
   const [copied, setCopied] = useState(false)
   const w = analysis.waitlist
-  const late = analysis.crossings.filter((c) => c.late)
-  const [today] = useState(() => {
-    const now = new Date()
-    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
-  })
+  // The wait-list milestone gets its own paragraph below.
+  const late = analysis.crossings.filter((c) => c.late && c.threshold.value !== 20)
+  const [today] = useState(isoToday)
 
   const paragraphs: string[] = [
     `Dear ${to || 'Care Team'},`,
@@ -33,12 +47,23 @@ export function Letter({ patient, analysis, onClose }: { patient: Patient; analy
           .join('\n'),
     )
   }
-  if (w && w.owedDays > 0) {
-    paragraphs.push(
-      `Under the OPTN policy on race-neutral eGFR calculations (approved December 2022), kidney transplant programs must modify the waiting time of Black candidates whose wait time was affected. A race-neutral eGFR of 20 or below first appears in my records on ${fmtDate(w.qualifiedOn)}. ${
-        w.countedFrom ? `My wait time is currently counted from ${fmtDate(w.countedFrom)}, a difference of about ${formatDuration(w.owedDays)}.` : ''
-      } Please review my eligibility for a waiting-time modification and tell me in writing what you find.`,
-    )
+  if (w && (w.owedDays > 0 || w.countedFromSource === 'none')) {
+    const first = `A race-neutral eGFR of 20 or below first appears in my records on ${fmtDate(w.qualifiedOn)}. That is when waiting time for a deceased-donor kidney can begin.`
+    const policy =
+      'Under OPTN policy approved in December 2022, kidney transplant programs must review registered Black candidates whose waiting time was affected by race-based eGFR and request a waiting-time modification for those who qualify.'
+    if (w.countedFromSource === 'patient') {
+      paragraphs.push(
+        `${first} My waiting time is counted from ${fmtDate(w.countedFrom!)}, about ${formatDuration(w.owedDays)} later. ${policy} Please review whether I qualify for a waiting-time modification and tell me in writing what you find.`,
+      )
+    } else if (w.countedFromSource === 'labs') {
+      paragraphs.push(
+        `${first} My race-adjusted reports did not show 20 or below until ${fmtDate(w.countedFrom!)}, about ${formatDuration(w.owedDays)} later. ${policy} If I am registered on the kidney wait list, please tell me which date my waiting time is counted from and whether I qualify for a modification.`,
+      )
+    } else {
+      paragraphs.push(
+        `${first} My race-adjusted reports have not shown 20 or below. Please tell me whether I should be referred for a kidney transplant evaluation.`,
+      )
+    }
   }
   paragraphs.push(
     'Could you please:\n• Recalculate my past results using a race-free equation and add them to my record\n• Use race-free eGFR for all of my future results\n• Review whether any referrals, medication decisions or transplant steps should be revisited',
@@ -56,7 +81,7 @@ export function Letter({ patient, analysis, onClose }: { patient: Patient; analy
   return (
     <section className="block letter-block" aria-labelledby="letter-h">
       <div className="block-head no-print">
-        <h2 id="letter-h" className="label">
+        <h2 id="letter-h" className="label" ref={headingRef} tabIndex={-1}>
           Your letter
         </h2>
         <button type="button" className="link-btn" onClick={onClose}>

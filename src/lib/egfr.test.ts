@@ -3,6 +3,7 @@ import { analyze } from './analyze'
 import { runBatch } from './batch'
 import { ckdEpi2009, ckdEpi2021, creatinineFromLegacy, mdrd, stage } from './egfr'
 import { SAMPLE_CSV, SAMPLE_PATIENT, SAMPLE_READINGS } from './samples'
+import { readingProblem } from './validate'
 
 describe('equations', () => {
   // Reference values from the published equations (and MDCalc / NKF calculators).
@@ -77,5 +78,53 @@ describe('batch', () => {
   it('reports bad rows instead of crashing', () => {
     const { errors } = runBatch('patient_id,dob,sex,date,creatinine_mg_dl\nX,1960-01-01,Q,2020-01-01,2')
     expect(errors[0]).toMatch(/sex/)
+  })
+})
+
+describe('wait-list edge cases', () => {
+  const patient = { dob: '1960-01-01', sex: 'male' as const, equation: 'ckdepi2009' as const }
+
+  it('flags a single result whose race-free eGFR qualifies but the report does not', () => {
+    // The judge's repro: one creatinine of 3.5 gave a "0 of 4" headline.
+    const a = analyze(patient, [{ date: '2020-01-01', scr: 3.5 }])
+    const w = a.waitlist!
+    expect(w.countedFromSource).toBe('none')
+    expect(a.affected).toBe(true)
+    const c20 = a.crossings.find((c) => c.threshold.value === 20)!
+    expect(c20.late).toBe(true)
+    expect(c20.ongoing).toBe(true)
+  })
+
+  it('treats a wait start on or before the race-free date as already counted', () => {
+    const a = analyze({ ...patient, waitStart: '2019-01-01' }, [{ date: '2020-01-01', scr: 3.5 }])
+    expect(a.waitlist!.owedDays).toBe(0)
+    expect(a.crossings.find((c) => c.threshold.value === 20)!.late).toBe(false)
+  })
+
+  it('keeps the wait-list milestone in step with the wait-list result', () => {
+    const a = analyze(SAMPLE_PATIENT, SAMPLE_READINGS)
+    const c20 = a.crossings.find((c) => c.threshold.value === 20)!
+    expect(c20.delayDays).toBe(a.waitlist!.owedDays)
+    expect(c20.raceFreeOn).toBe(a.waitlist!.qualifiedOn)
+  })
+})
+
+describe('validation', () => {
+  const today = '2026-10-20'
+  it('accepts plausible readings', () => {
+    expect(readingProblem({ date: '2020-01-01', scr: 3.5 }, '1960-01-01', today)).toBeUndefined()
+    expect(readingProblem({ date: '2020-01-01', reported: 22 }, '1960-01-01', today)).toBeUndefined()
+  })
+  it('catches wrong units, impossible eGFRs and bad dates', () => {
+    expect(readingProblem({ date: '2020-01-01', scr: 350 }, '1960-01-01', today)).toMatch(/units/)
+    expect(readingProblem({ date: '2020-01-01', scr: 0.05 }, '1960-01-01', today)).toMatch(/units/)
+    expect(readingProblem({ date: '2020-01-01', reported: 400 }, '1960-01-01', today)).toMatch(/eGFR/)
+    expect(readingProblem({ date: '1950-01-01', scr: 1 }, '1960-01-01', today)).toMatch(/before the date of birth/)
+    expect(readingProblem({ date: '2030-01-01', scr: 1 }, '1960-01-01', today)).toMatch(/future/)
+  })
+  it('skips implausible CSV rows with a reason', () => {
+    const { rows, errors } = runBatch('patient_id,dob,sex,date,creatinine_mg_dl\nX,1960-01-01,M,2020-01-01,290\nX,1960-01-01,M,2021-01-01,3.4')
+    expect(errors[0]).toMatch(/Row 2: Creatinine/)
+    expect(rows[0].readings).toHaveLength(1)
   })
 })

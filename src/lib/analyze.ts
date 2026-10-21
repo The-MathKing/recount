@@ -105,16 +105,29 @@ export function analyze(patient: Patient, readings: Reading[]): Analysis {
   const waitlist = waitlistFor(patient, points)
   const crossings: Crossing[] = []
   for (const t of THRESHOLDS) {
+    if (t.value === 20 && waitlist) {
+      // The wait-list milestone follows OPTN's rule (any race-neutral equation) and the patient's own
+      // wait-time start, so it always agrees with `waitlist`.
+      const ongoing = waitlist.countedFromSource === 'none'
+      crossings.push({
+        threshold: t,
+        reportedOn: waitlist.countedFrom,
+        raceFreeOn: waitlist.qualifiedOn,
+        delayDays: waitlist.owedDays,
+        ongoing,
+        late: ongoing || waitlist.owedDays > 0,
+      })
+      continue
+    }
     const reportedOn = points.find((p) => crosses(t, p.reported))?.date
-    // The wait-list milestone follows OPTN's rule (any race-neutral equation), so it agrees with `waitlist`.
-    const raceFreeOn = t.value === 20 && waitlist ? waitlist.qualifiedOn : points.find((p) => crosses(t, p.raceFree))?.date
+    const raceFreeOn = points.find((p) => crosses(t, p.raceFree))?.date
     if (!raceFreeOn) continue
     const ongoing = !reportedOn
     const delayDays = days(raceFreeOn, reportedOn ?? last!)
     crossings.push({ threshold: t, reportedOn, raceFreeOn, delayDays: Math.max(0, delayDays), ongoing, late: ongoing || delayDays > 0 })
   }
 
-  const affected = crossings.some((c) => c.late) || (waitlist?.owedDays ?? 0) > 0
+  const affected = crossings.some((c) => c.late)
   return { points, crossings, waitlist, affected }
 }
 

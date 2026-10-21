@@ -1,5 +1,6 @@
 import { analyze, type Analysis, type Patient, type Reading } from './analyze'
 import type { LegacyEquation, Sex } from './egfr'
+import { readingProblem } from './validate'
 
 export interface BatchRow {
   id: string
@@ -78,6 +79,9 @@ export function runBatch(csv: string): BatchResult {
     if (!sex) return errors.push(`${at}: sex must be F or M`)
     if (!ISO.test(dob ?? '') || !ISO.test(date ?? '')) return errors.push(`${at}: dates must be YYYY-MM-DD`)
     if (!(scr > 0) && !(reported > 0)) return errors.push(`${at}: needs a creatinine or a reported eGFR`)
+    const reading: Reading = { date, scr: scr > 0 ? scr : undefined, reported: reported > 0 ? reported : undefined }
+    const problem = readingProblem(reading, dob)
+    if (problem) return errors.push(`${at}: ${problem}`)
 
     let g = groups.get(id)
     if (!g) {
@@ -85,7 +89,7 @@ export function runBatch(csv: string): BatchResult {
       g = { patient: { dob, sex, equation: parseEquation(c[idx.equation] ?? ''), waitStart }, readings: [] }
       groups.set(id, g)
     }
-    g.readings.push({ date, scr: scr > 0 ? scr : undefined, reported: reported > 0 ? reported : undefined })
+    g.readings.push(reading)
   })
 
   const rows = [...groups].map(([id, g]) => ({ id, ...g, result: analyze(g.patient, g.readings) }))

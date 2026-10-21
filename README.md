@@ -17,7 +17,7 @@ eGFR is the number doctors use to judge kidney function. It's calculated from a 
 | < 45 / < 30 | Metformin safety limits, nephrologist referral |
 | ≤ 20 | **Kidney transplant wait time starts counting** |
 
-In 2021 the NKF and ASN recommended the race-free CKD-EPI 2021 equation. In 2023 the OPTN required transplant centers to find affected Black candidates and restore their lost wait time. **But the fix only works if someone finds you.** People who changed clinics, who aren't listed yet, or who only have old results can be missed. So can people whose delay happened earlier, at diagnosis or referral, where no policy restores anything.
+In 2021 the NKF and ASN recommended the race-free CKD-EPI 2021 equation. In 2023 the OPTN required kidney programs to review their registered Black candidates and request a wait-time change for anyone affected. **But the fix only works if someone finds you.** People who changed clinics, who aren't listed yet, or who only have old results can be missed. So can people whose delay happened earlier, at diagnosis or referral, where no policy restores anything.
 
 ## What Recount does
 
