@@ -1,11 +1,13 @@
 import { useMemo, useState } from 'react'
 import { analyze, formatDuration, type Analysis, type Patient, type Reading } from '../lib/analyze'
 import { STAGE_LABEL, UMOL_PER_MGDL, type LegacyEquation, type Sex } from '../lib/egfr'
+import type { FoundReading, FoundReport } from '../lib/parseReport'
 import { SAMPLE_PATIENT, SAMPLE_READINGS } from '../lib/samples'
 import { isoToday, readingProblem } from '../lib/validate'
 import { Chart } from './Chart'
 import { fmtDate, fmtMonth } from './format'
 import { Letter } from './Letter'
+import { ReportReader } from './ReportReader'
 
 type Kind = 'scr' | 'reported'
 interface Row {
@@ -47,6 +49,26 @@ export function Checker() {
     setWaitStart('')
     setRows([blankRow(), blankRow(), blankRow()])
     setShowLetter(false)
+  }
+
+  // Results confirmed from a photographed report replace the example, or merge into what the user typed.
+  const addFromReport = (found: FoundReport, readings: FoundReading[]) => {
+    if (found.dob) setDob(found.dob)
+    if (found.sex) setSex(found.sex)
+    if (found.equation) setEquation(found.equation)
+    const dates = new Set(readings.map((r) => r.date))
+    const kept = isSample ? [] : rows.filter((r) => r.value.trim() && !dates.has(r.date))
+    const added: Row[] = readings.map((r) => ({
+      id: nextId++,
+      date: r.date,
+      kind: r.scr ? 'scr' : 'reported',
+      value: r.scr ? (umol ? String(Math.round(r.scr * UMOL_PER_MGDL)) : String(r.scr)) : String(r.reportedBlack),
+    }))
+    setRows([...kept, ...added].sort((a, b) => a.date.localeCompare(b.date)))
+    if (isSample) {
+      setIsSample(false)
+      setWaitStart('')
+    }
   }
 
   const update = (id: number, patch: Partial<Row>) => setRows((rs) => rs.map((r) => (r.id === id ? { ...r, ...patch } : r)))
@@ -92,6 +114,7 @@ export function Checker() {
   return (
     <div className="workbench">
       <aside className="intake" aria-labelledby="intake-h">
+        <ReportReader onAdd={addFromReport} />
         <div className="intake-head">
           <h2 id="intake-h" className="label">
             Your results

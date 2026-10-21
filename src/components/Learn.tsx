@@ -63,8 +63,14 @@ export function Learn() {
           <p>
             <b>Patients</b> can check their own history in a minute and get a letter that cites the policy. <b>Clinics and
             community health workers</b> can screen a whole panel and find who to call first. Everything runs in the browser.
-            Health data never leaves the device, there are no accounts, and no AI model guesses at anyone's numbers. Every
-            result is a published formula you can check by hand.
+            Health data never leaves the device and there are no accounts.
+          </p>
+          <p>
+            <b>AI reads; formulas decide.</b> Most old results are on paper, so Recount uses an on-device AI model to read a
+            photo of a lab report. The photo is never uploaded. The AI never computes a medical number: every eGFR is
+            recalculated from creatinine with the published formulas. Where a report prints both values, the formula checks
+            the AI's reading and flags any mismatch. A biased formula caused this harm, so we kept AI out of the math and made
+            every result something you can check by hand.
           </p>
         </div>
       </section>

@@ -3,7 +3,7 @@
 **For 20+ years, kidney tests added points to Black patients' scores. Recount shows each patient whether that delayed their diagnosis, specialist referral or transplant wait time. It also writes the letter that asks for the time back.**
 
 Built for the Black Code Collective Hacktoberfest.
-**Track 2: Modern Healthcare Outcomes**, with a strong **Track 1: AI Ethics & Access** angle (an audit of a biased clinical algorithm).
+**Track 2: Modern Healthcare Outcomes**, with a strong **Track 1: AI Ethics & Access** angle: it audits a biased clinical algorithm, and it uses AI only where AI is safe.
 
 ---
 
@@ -21,7 +21,7 @@ In 2021 the NKF and ASN recommended the race-free CKD-EPI 2021 equation. In 2023
 
 ## What Recount does
 
-1. **Check my labs (patients).** Enter your creatinine history, or just the "eGFR if African American" line from old portal reports; Recount works backwards from that. You get:
+1. **Check my labs (patients).** Photograph an old lab report, or type in your creatinine history (or just the "eGFR if African American" line from old portal reports; Recount works backwards from that). You get:
    - A headline: how much transplant wait time may be missing.
    - A timeline chart of race-adjusted vs race-free eGFR, with the uncounted wait time shaded.
    - Every care milestone, marked *on time* or *N months late*.
@@ -29,9 +29,14 @@ In 2021 the NKF and ASN recommended the race-free CKD-EPI 2021 equation. In 2023
 2. **Screen a clinic panel (dialysis units, CHWs, navigators).** Drop in a CSV export. Recount screens every patient, ranks them by wait time owed, and exports a call list.
 3. **Why this matters.** Plain-language background, plus the same pattern in other algorithms (spirometry, VBAC, pulse oximetry).
 
+### AI where it helps, formulas where it matters
+Old lab reports are usually paper or a screenshot, and typing in years of results is where people give up. Recount uses an on-device neural OCR model (Tesseract's LSTM, running in a Web Worker) to read a photo of the report: date of birth, sex, creatinine and the printed eGFR lines, including a results-history table.
+
+The AI never computes a medical number. Every eGFR is recalculated from creatinine with the published equations, and the math checks the AI's work: where a report prints both creatinine and eGFR, Recount recomputes the eGFR and flags any mismatch (usually an OCR misread). The same check identifies which formula the lab used. Nothing goes into the form until the person confirms it.
+
 ### Ethics by design
-- **Health data never leaves the browser.** No server, no accounts, no analytics.
-- **No black box.** Every number comes from a published, peer-reviewed equation (cited in the app), not a model's guess. Unit tests check it against reference values.
+- **Health data never leaves the browser.** No server, no accounts, no analytics. The OCR model runs on the device and is served by this site, so a lab-report photo is never uploaded.
+- **No black box.** Every eGFR comes from a published, peer-reviewed equation (cited in the app), not a model's guess. Unit tests check it against reference values.
 - It's an advocacy tool, not a diagnosis. It helps patients ask the right question of the people who can act on it.
 
 ## Run it
@@ -40,7 +45,7 @@ In 2021 the NKF and ASN recommended the race-free CKD-EPI 2021 equation. In 2023
 cd recount
 npm install
 npm run dev        # http://localhost:5173
-npm test           # equation + analysis tests (vitest)
+npm test           # equation, analysis and report-parser tests (vitest)
 npm run build      # static site in dist/, deploy anywhere (Netlify, Vercel, GitHub Pages)
 ```
 
