@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useId, useMemo, useRef, useState } from 'react'
 import type { Analysis } from '../lib/analyze'
 import { fmtDate } from './format'
 
@@ -17,6 +17,7 @@ export function Chart({ analysis }: { analysis: Analysis }) {
   const svgRef = useRef<SVGSVGElement>(null)
   const [hover, setHover] = useState<number | null>(null)
   const scrollRef = useRef<HTMLDivElement>(null)
+  const clipId = useId()
 
   useEffect(() => {
     const el = scrollRef.current
@@ -118,20 +119,27 @@ export function Chart({ analysis }: { analysis: Analysis }) {
               20 · wait list
             </text>
 
-            {SERIES.map((s) => (
-              <path key={s.key} className={`line ${s.cls}`} d={path(s.key)} />
-            ))}
-            {SERIES.map((s) =>
-              points.map((p, i) => (
-                <circle
-                  key={s.key + i}
-                  className={`dot ${s.cls}`}
-                  cx={geo.x(geo.t[i])}
-                  cy={geo.y(p[s.key])}
-                  r={hover === i ? 5 : 3}
-                />
-              )),
-            )}
+            {/* The lines draw in left to right whenever the set of dates changes (not on every edit,
+                where they glide to the new values instead). */}
+            <clipPath id={clipId}>
+              <rect key={points.map((p) => p.date).join()} className="reveal" x={0} y={0} width={W} height={H} />
+            </clipPath>
+            <g clipPath={`url(#${clipId})`}>
+              {SERIES.map((s) => (
+                <path key={s.key} className={`line ${s.cls}`} d={path(s.key)} />
+              ))}
+              {SERIES.map((s) =>
+                points.map((p, i) => (
+                  <circle
+                    key={s.key + i}
+                    className={`dot ${s.cls}`}
+                    cx={geo.x(geo.t[i])}
+                    cy={geo.y(p[s.key])}
+                    r={hover === i ? 5 : 3}
+                  />
+                )),
+              )}
+            </g>
             {ends.map((s) => (
               <text key={s.key} className="end-label" x={W - M.right + 6} y={s.y + 4}>
                 {s.short} {last[s.key].toFixed(0)}

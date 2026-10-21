@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react'
+import { flushSync } from 'react-dom'
 import { Checker } from './components/Checker'
 import { Clinic } from './components/Clinic'
 import { Learn } from './components/Learn'
-import { analyze } from './lib/analyze'
-import { SAMPLE_PATIENT, SAMPLE_READINGS } from './lib/samples'
+import { prefersReducedMotion } from './components/motion'
+import { Printout } from './components/Printout'
 
 const TABS = [
   { id: 'check', label: 'Check my labs' },
@@ -17,34 +18,16 @@ const fromHash = (): Tab => {
   return TABS.some((t) => t.id === h) ? (h as Tab) : 'check'
 }
 
-// One real line from the example patient: the reading where the multiplier hid a wait-list-eligible eGFR.
-const SPECIMEN = analyze(SAMPLE_PATIENT, SAMPLE_READINGS).points.find((p) => p.raceFree <= 20 && p.reported > 20)!
-
-function Printout() {
-  return (
-    <figure className="printout" aria-label="Example lab result recalculated without race">
-      <div className="printout-row">
-        <span>CREATININE, SERUM</span>
-        <b>{SPECIMEN.scr.toFixed(2)} mg/dL</b>
-      </div>
-      <div className="printout-row">
-        <span>eGFR IF AFRICAN AMERICAN</span>
-        <b className="old">{SPECIMEN.reported.toFixed(1)}</b>
-      </div>
-      <div className="printout-row fixed">
-        <span>eGFR, RACE-FREE (2021)</span>
-        <b>{SPECIMEN.raceFree.toFixed(1)}  ≤ 20</b>
-      </div>
-      <figcaption>Same blood test. Only the race-free number qualifies for the transplant wait list.</figcaption>
-    </figure>
-  )
-}
-
 export default function App() {
   const [tab, setTab] = useState<Tab>(fromHash)
 
   useEffect(() => {
-    const on = () => setTab(fromHash())
+    // Crossfade between tabs where the browser supports view transitions.
+    const on = () => {
+      const next = fromHash()
+      if (!document.startViewTransition || prefersReducedMotion()) return setTab(next)
+      document.startViewTransition(() => flushSync(() => setTab(next)))
+    }
     window.addEventListener('hashchange', on)
     return () => window.removeEventListener('hashchange', on)
   }, [])

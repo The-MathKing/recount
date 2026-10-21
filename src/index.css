@@ -193,7 +193,54 @@ nav a[aria-current='page'] {
 }
 .printout-row .old {
   color: var(--muted);
-  text-decoration: line-through 2px var(--strike);
+  /* A strike drawn in like a pen correction; the line is fully drawn at rest. */
+  background: linear-gradient(var(--strike), var(--strike)) no-repeat 0 55% / 100% 2px;
+  animation: strike-in 0.5s 0.5s cubic-bezier(0.6, 0, 0.3, 1) backwards;
+}
+.printout {
+  position: relative;
+}
+.vals {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 10px;
+}
+.elig {
+  font-size: 0.7rem;
+  color: var(--muted);
+  min-width: 8.5em;
+  text-align: right;
+}
+.elig.yes {
+  color: var(--strike);
+  font-weight: 600;
+}
+.slider {
+  display: grid;
+  gap: 2px;
+  margin-top: 8px;
+  font: 0.72rem var(--mono);
+  color: var(--muted);
+}
+.slider input {
+  width: 100%;
+  accent-color: var(--brand);
+}
+.stamp {
+  position: absolute;
+  top: -14px;
+  right: -10px;
+  font: 800 0.78rem var(--display);
+  font-stretch: 85%;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--strike);
+  border: 2.5px solid var(--strike);
+  padding: 3px 8px;
+  background: var(--sheet);
+  transform: rotate(8deg);
+  animation: stamp-in 0.35s 1s cubic-bezier(0.3, 1.6, 0.5, 1) backwards;
+  pointer-events: none;
 }
 .printout-row.fixed {
   border-top: 1px dashed var(--muted);
@@ -247,6 +294,86 @@ nav a[aria-current='page'] {
   color: var(--ink-2);
   border: 1px dashed var(--ink-2);
   padding: 6px 10px;
+}
+
+/* Motion. Everything below animates from or to its resting state, never to a hidden one. */
+@keyframes strike-in {
+  from {
+    background-size: 0% 2px;
+  }
+}
+@keyframes stamp-in {
+  from {
+    opacity: 0;
+    transform: rotate(8deg) scale(1.8);
+  }
+}
+@keyframes swipe-in {
+  from {
+    background-size: 0% 100%;
+  }
+}
+@keyframes reveal {
+  from {
+    transform: scaleX(0);
+  }
+}
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes row-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+@keyframes scan {
+  from {
+    top: -10%;
+  }
+  to {
+    top: 100%;
+  }
+}
+.results tbody tr {
+  animation: row-in 0.4s cubic-bezier(0.2, 0.7, 0.2, 1) backwards;
+  animation-delay: calc(var(--i, 0) * 60ms + 0.1s);
+}
+.results tbody tr:hover td {
+  background: var(--paper);
+}
+.finding,
+.block,
+.report-head {
+  animation: fade-in 0.35s ease backwards;
+}
+.btn {
+  transition:
+    transform 0.08s ease,
+    background 0.15s ease,
+    filter 0.15s ease;
+}
+.btn:active:not(:disabled) {
+  transform: translateY(1px);
+}
+.scan {
+  position: relative;
+  overflow: hidden;
+}
+.scan::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 10%;
+  background: linear-gradient(transparent, color-mix(in srgb, var(--brand) 45%, transparent), transparent);
+  animation: scan 1.4s ease-in-out infinite alternate;
+}
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: 0.22s;
 }
 
 /* Photo reader */
@@ -576,9 +703,15 @@ input[aria-invalid='true'] {
 /* A highlighter swipe: the one loud mark on the page. */
 .finding-value mark {
   color: inherit;
-  background: linear-gradient(176deg, transparent 52%, var(--mark) 52%, var(--mark) 90%, transparent 90%);
+  background: linear-gradient(176deg, transparent 52%, var(--mark) 52%, var(--mark) 90%, transparent 90%) no-repeat 0 0 / 100% 100%;
   padding: 0 0.12em;
   margin: 0 -0.12em;
+}
+.finding-value mark.swipe {
+  animation: swipe-in 0.7s 0.15s cubic-bezier(0.6, 0, 0.2, 1) backwards;
+}
+.finding-value {
+  font-variant-numeric: tabular-nums;
 }
 
 .block {
@@ -806,6 +939,22 @@ textarea {
   fill: none;
   stroke-width: 2;
   stroke-linejoin: round;
+  /* Edits glide to the new values where the browser can animate path data. */
+  transition: d 0.45s ease;
+}
+.dot {
+  transition:
+    cx 0.45s ease,
+    cy 0.45s ease,
+    r 0.15s ease;
+}
+.reveal {
+  transform-box: fill-box;
+  transform-origin: left center;
+  animation: reveal 1.1s cubic-bezier(0.5, 0, 0.2, 1) backwards;
+}
+.gap {
+  animation: fade-in 0.6s 0.9s ease backwards;
 }
 .line.s-reported {
   stroke: var(--series-reported);
@@ -978,6 +1127,19 @@ footer {
 }
 
 @media (max-width: 600px) {
+  .printout-row {
+    font-size: 0.76rem;
+  }
+  .elig {
+    min-width: 0;
+    white-space: nowrap;
+  }
+  .vals {
+    gap: 6px;
+  }
+  .stamp {
+    right: 0;
+  }
   .entries li {
     grid-template-columns: minmax(0, 1.45fr) minmax(0, 0.5fr) minmax(0, 1.1fr) 18px;
     gap: 4px;
@@ -1022,8 +1184,11 @@ footer {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  * {
+  *,
+  *::before,
+  *::after {
     transition: none !important;
+    animation: none !important;
   }
 }
 

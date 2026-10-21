@@ -7,6 +7,7 @@ import { isoToday, readingProblem } from '../lib/validate'
 import { Chart } from './Chart'
 import { fmtDate, fmtMonth } from './format'
 import { Letter } from './Letter'
+import { useCountUp } from './motion'
 import { ReportReader } from './ReportReader'
 
 type Kind = 'scr' | 'reported'
@@ -312,6 +313,15 @@ function ReportHeader({ analysis, patient, isSample }: { analysis: Analysis; pat
   )
 }
 
+function CountDuration({ days }: { days: number }) {
+  // Counting days up through formatDuration ticks from days to months, which reads as time accumulating.
+  return <>{formatDuration(Math.round(useCountUp(days, { ms: 1100 })))}</>
+}
+
+function CountNumber({ n }: { n: number }) {
+  return <>{Math.round(useCountUp(n, { ms: 700 }))}</>
+}
+
 const POLICY_NOTE =
   'Since 2023, kidney transplant programs must review registered Black candidates and request a wait-time change for those who qualify.'
 
@@ -325,7 +335,9 @@ function Finding({ analysis }: { analysis: Analysis }) {
       <section className="finding critical">
         <p className="label">Wait-list eligible, but not on your reports</p>
         <p className="finding-value">
-          <mark>since {fmtMonth(w.qualifiedOn)}</mark>
+          <mark key="since" className="swipe">
+            since {fmtMonth(w.qualifiedOn)}
+          </mark>
         </p>
         <p>
           Without the race multiplier, your eGFR was 20 or below on <b>{fmtDate(w.qualifiedOn)}</b>. That is when wait time for a
@@ -342,7 +354,9 @@ function Finding({ analysis }: { analysis: Analysis }) {
           {w.countedFromSource === 'patient' ? 'Transplant wait time not counted' : 'Possible missing wait time'}
         </p>
         <p className="finding-value">
-          <mark>{formatDuration(w.owedDays)}</mark>
+          <mark key="owed" className="swipe">
+            <CountDuration days={w.owedDays} />
+          </mark>
         </p>
         <p>
           Without the race multiplier, your eGFR reached 20 on <b>{fmtDate(w.qualifiedOn)}</b>. That is when wait time for a
@@ -367,8 +381,8 @@ function Finding({ analysis }: { analysis: Analysis }) {
       <section className="finding serious">
         <p className="label">Care milestones reached late</p>
         <p className="finding-value">
-          <mark>
-            {late.length} milestone{late.length === 1 ? '' : 's'}
+          <mark key="late" className="swipe">
+            <CountNumber n={late.length} /> milestone{late.length === 1 ? '' : 's'}
           </mark>
         </p>
         <p>
@@ -389,7 +403,9 @@ function Finding({ analysis }: { analysis: Analysis }) {
   return (
     <section className={`finding ${latest.raceFree < 30 ? 'neutral' : 'good'}`}>
       <p className="label">No late milestones found</p>
-      <p className="finding-value">{latest.raceFree.toFixed(0)}</p>
+      <p className="finding-value">
+        <CountNumber n={Math.round(latest.raceFree)} />
+      </p>
       <p>
         Your latest race-free eGFR: {STAGE_LABEL[latest.raceFreeStage].toLowerCase()}. The race multiplier didn't move any of
         these results across a care threshold. Ask your care team to use race-free results from now on.
@@ -416,8 +432,8 @@ function Milestones({ analysis }: { analysis: Analysis }) {
             </tr>
           </thead>
           <tbody>
-            {analysis.crossings.map((c) => (
-              <tr key={c.threshold.value} className={c.late ? 'is-late' : undefined}>
+            {analysis.crossings.map((c, i) => (
+              <tr key={c.threshold.value} className={c.late ? 'is-late' : undefined} style={{ '--i': i } as React.CSSProperties}>
                 <td className="mono">
                   {c.threshold.inclusive ? '≤' : '<'}
                   {c.threshold.value}

@@ -3,6 +3,11 @@ import { formatDuration } from '../lib/analyze'
 import { CSV_HEADER, runBatch, toCsv } from '../lib/batch'
 import { SAMPLE_CSV } from '../lib/samples'
 import { fmtDate } from './format'
+import { useCountUp } from './motion'
+
+function Count({ n, format = String }: { n: number; format?: (n: number) => string }) {
+  return <>{format(Math.round(useCountUp(n)))}</>
+}
 
 export function Clinic() {
   // Open on the sample panel so the screen shows its output before anyone uploads a file.
@@ -91,19 +96,27 @@ export function Clinic() {
             <dl className="report-head tally">
               <div>
                 <dt>Screened</dt>
-                <dd>{result.rows.length}</dd>
+                <dd>
+                  <Count n={result.rows.length} />
+                </dd>
               </div>
               <div>
                 <dt>Late milestone</dt>
-                <dd>{affected.length}</dd>
+                <dd>
+                  <Count n={affected.length} />
+                </dd>
               </div>
               <div className="hot">
                 <dt>May be owed wait time</dt>
-                <dd>{owed.length}</dd>
+                <dd>
+                  <Count n={owed.length} />
+                </dd>
               </div>
               <div className="hot">
                 <dt>Wait time to review</dt>
-                <dd>{formatDuration(totalDays)}</dd>
+                <dd>
+                  <Count n={totalDays} format={formatDuration} />
+                </dd>
               </div>
             </dl>
             <section className="block">
@@ -126,12 +139,12 @@ export function Clinic() {
                     </tr>
                   </thead>
                   <tbody>
-                    {result.rows.map((r) => {
+                    {result.rows.map((r, i) => {
                       const w = r.result.waitlist
                       const other = r.result.crossings.filter((c) => c.late && c.threshold.value !== 20)
                       const owes = (w?.owedDays ?? 0) > 0
                       return (
-                        <tr key={r.id} className={owes ? 'is-late' : undefined}>
+                        <tr key={r.id} className={owes ? 'is-late' : undefined} style={{ '--i': i } as React.CSSProperties}>
                           <td className="mono">
                             <b>{r.id}</b>
                           </td>

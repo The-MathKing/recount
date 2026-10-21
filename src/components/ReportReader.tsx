@@ -58,7 +58,9 @@ export function ReportReader({ onAdd }: { onAdd: (found: FoundReport, readings: 
       <section className="reader" aria-live="polite">
         <ReaderHead />
         <div className="reader-busy">
-          <img src={state.preview} alt="The lab report being read" />
+          <div className="scan">
+            <img src={state.preview} alt="The lab report being read" />
+          </div>
           <div>
             <p>{state.progress.stage === 'loading' ? 'Loading the reader…' : `Reading the report… ${pct}%`}</p>
             <progress max={1} value={state.progress.stage === 'reading' ? state.progress.fraction : undefined} />
